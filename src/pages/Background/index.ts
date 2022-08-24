@@ -24,19 +24,17 @@ function block(reason: string) {
 }
 
 const isSearchSiteByTab: Record<number, boolean> = {};
-let lastCommitUrl: string | null = null;
+let lastCommitUrl: string | undefined;
 chrome.webNavigation.onCommitted.addListener(async (e: any) => {
   if (e.frameType as unknown as string !== 'outermost_frame') {
     return;
   }
 
-  lastCommitUrl = e.url;
-
   console.log('onCommitted', e);
 
   if (isBlockedSite(e.url)) {
-    // Block the site unless it's clicked from a search result
-    if (!(e.transitionType === 'link' && isSearchSiteByTab[e.tabId])) {
+    // Block the site unless it's clicked from a non-blocked site
+    if (!(e.transitionType === 'link' && !isBlockedSite(lastCommitUrl))) {
       block('Visiting a blocked site!');
     } else {
       // Don't allow visiting reddit.com by just typing "reddit" into google
@@ -49,7 +47,7 @@ chrome.webNavigation.onCommitted.addListener(async (e: any) => {
   }
 
   isSearchSiteByTab[e.tabId] = isSearchSite(e.url);
-
+  lastCommitUrl = e.url;
 });
 
 // Do not allow following any relative links on a blocked, SPA site.
@@ -63,7 +61,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(async (e) => {
     return;
   }
 
-  if (isBlockedSite(e.url) && lastCommitUrl !== e.url) {
+  if (isBlockedSite(e.url)) {
     block('Following link on a blocked site!');
   }
 });
