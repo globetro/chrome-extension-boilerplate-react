@@ -1,17 +1,9 @@
-const searchSites = [
-  /.*\.google.com/,
-  /.*\.bing.com/,
-  /.*\.duckduckgo.com/,
-];
-
 const blockedSites = [
-  /.*\.reddit.com$/,
+  /.*\.reddit\.com$/,
+  /.*\.theverge\.com$/,
+  /.*\.polygon\.com$/,
+  /.*\.yahoo\.com$/,
 ];
-
-function isSearchSite(url?: string) {
-  const u = new URL(url || '');
-  return searchSites.some((r) => r.test(u.host));
-}
 
 function isBlockedSite(url?: string) {
   const u = new URL(url || '');
@@ -23,7 +15,6 @@ function block(reason: string) {
   chrome.tabs.update({url: chrome.runtime.getURL('newtab.html')});
 }
 
-const isSearchSiteByTab: Record<number, boolean> = {};
 let lastCommitUrl: string | undefined;
 chrome.webNavigation.onCommitted.addListener(async (e: any) => {
   if (e.frameType as unknown as string !== 'outermost_frame') {
@@ -46,7 +37,6 @@ chrome.webNavigation.onCommitted.addListener(async (e: any) => {
     }
   }
 
-  isSearchSiteByTab[e.tabId] = isSearchSite(e.url);
   lastCommitUrl = e.url;
 });
 
