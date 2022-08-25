@@ -1,5 +1,8 @@
 {
-  "extends": "react-app",
+  "extends": ["plugin:prettier/recommended", "react-app"],
+  "rules": {
+    "prettier/prettier": "warn"
+  },
   "globals": {
     "chrome": "readonly"
   }

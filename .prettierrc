@@ -1,6 +1,12 @@
 {
+  "arrowParens": "always",
+  "bracketSpacing": false,
+  "bracketSameLine": true,
+  "printWidth": 100,
   "singleQuote": true,
-  "trailingComma": "es5",
-  "requirePragma": false,
-  "arrowParens": "always"
+  "jsxSingleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "semi": true,
+  "importOrder": ["^src/(.*)$", "^\\.\\/.*(?<!css)$", "^\\.\\/.*\\.(css|scss)$"]
 }
