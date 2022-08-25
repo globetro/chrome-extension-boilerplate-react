@@ -1,14 +1,4 @@
-const blockedSites = [
-  /.*\.reddit\.com$/,
-  /.*\.theverge\.com$/,
-  /.*\.polygon\.com$/,
-  /.*\.yahoo\.com$/,
-];
-
-function isBlockedSite(url?: string) {
-  const u = new URL(url || '');
-  return blockedSites.some((r) => r.test(u.host));
-}
+import {isBlockedSite} from '../../utils';
 
 function block(reason: string) {
   console.log('Blocked reason', reason);
@@ -17,22 +7,22 @@ function block(reason: string) {
 
 let lastCommitUrl: string | undefined;
 chrome.webNavigation.onCommitted.addListener(async (e: any) => {
-  if (e.frameType as unknown as string !== 'outermost_frame') {
+  if ((e.frameType as unknown as string) !== 'outermost_frame') {
     return;
   }
 
   console.log('onCommitted', e);
 
-  if (isBlockedSite(e.url)) {
+  if (await isBlockedSite(e.url)) {
     // Block the site unless it's clicked from a non-blocked site
-    if (!(e.transitionType === 'link' && !isBlockedSite(lastCommitUrl))) {
+    if (!(e.transitionType === 'link' && !(await isBlockedSite(lastCommitUrl)))) {
       block('Visiting a blocked site!');
     } else {
       // Don't allow visiting reddit.com by just typing "reddit" into google
       // and following the first link
       const url = new URL(e.url);
       if (url.pathname === '/') {
-        block('Visiting the site by just typing it into a search engine!')
+        block('Visiting the site by just typing it into a search engine!');
       }
     }
   }
@@ -51,7 +41,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(async (e) => {
     return;
   }
 
-  if (isBlockedSite(e.url)) {
+  if (await isBlockedSite(e.url)) {
     block('Following link on a blocked site!');
   }
 });

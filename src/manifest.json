@@ -5,7 +5,7 @@
   "options_page": "options.html",
   "background": { "service_worker": "background.bundle.js" },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "options.html",
     "default_icon": "icon-34.png"
   },
   "icons": {
@@ -19,6 +19,7 @@
   ],
   "permissions": [
     "webNavigation",
-    "tabs"
+    "tabs",
+    "storage"
   ]
 }
