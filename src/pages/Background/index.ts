@@ -2,7 +2,9 @@ import {isBlockedSite} from '../../utils';
 
 function block(reason: string) {
   console.log('Blocked reason', reason);
-  chrome.tabs.update({url: chrome.runtime.getURL('newtab.html')});
+  chrome.tabs.update({
+    url: chrome.runtime.getURL('newtab.html') + '?reason=' + encodeURIComponent(reason),
+  });
 }
 
 let lastCommitUrl: string | undefined;

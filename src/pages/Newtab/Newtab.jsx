@@ -1,28 +1,14 @@
 import React from 'react';
-import logo from '../../assets/img/logo.svg';
-import './Newtab.css';
+import {useMemo} from 'react';
 import './Newtab.scss';
 
-const Newtab = () => {
+export default function Newtab() {
+  const params = useMemo(() => new URLSearchParams(window.location.search.slice(1)), []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/pages/Newtab/Newtab.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React!
-        </a>
-        <h6>The color of this paragraph is defined using SASS.</h6>
-      </header>
+    <div className='container'>
+      <h1>❌ Site is blocked</h1>
+      <h2>{params.get('reason')}</h2>
     </div>
   );
-};
-
-export default Newtab;
+}
