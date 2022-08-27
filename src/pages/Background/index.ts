@@ -1,35 +1,64 @@
 import {isBlockedSite} from '../../utils';
 
-function block(reason: string) {
-  console.log('Blocked reason', reason);
-  chrome.tabs.update({
+function block(tabId: number, reason: string) {
+  chrome.tabs.update(tabId, {
     url: chrome.runtime.getURL('newtab.html') + '?reason=' + encodeURIComponent(reason),
   });
 }
 
-let lastCommitUrl: string | undefined;
-chrome.webNavigation.onCommitted.addListener(async (e: any) => {
-  if ((e.frameType as unknown as string) !== 'outermost_frame') {
+chrome.webNavigation.onBeforeNavigate.addListener(async (e) => {
+  // if (e.frameType !== 'outermost_frame') {
+  if ((e as any).parentFrameId !== -1) {
+    // don't care about subframes/iframes
     return;
   }
 
-  console.log('onCommitted', e);
+  chrome.tabs.get(e.tabId, async (tab) => {
+    console.log('beforeNavigate.tabInfo', tab);
+    console.log('openerTabCommitedUrl', lastCommitUrlByTabId[tab.openerTabId || 0]);
+    if (!tab.url && tab.openerTabId) {
+      // Means we opened this tab from another tab
+      if (
+        (await isBlockedSite(tab.pendingUrl)) &&
+        (await isBlockedSite(lastCommitUrlByTabId[tab.openerTabId]))
+      ) {
+        block(e.tabId, 'Opening blocked site in a new tab from a blocked site');
+      }
+    }
+  });
+});
 
+const lastCommitUrlByTabId: Record<number, string | undefined> = {};
+chrome.webNavigation.onCommitted.addListener(async (e) => {
+  // if (e.frameType !== 'outermost_frame') {
+  if ((e as any).parentFrameId !== -1) {
+    // don't care about subframes/iframes
+    return;
+  }
+
+  chrome.tabs.get(e.tabId, (tab) => console.log('tabInfo', tab));
+
+  console.log('onCommitted', e);
   if (await isBlockedSite(e.url)) {
-    // Block the site unless it's clicked from a non-blocked site
-    if (!(e.transitionType === 'link' && !(await isBlockedSite(lastCommitUrl)))) {
-      block('Visiting a blocked site!');
+    if (e.transitionType === 'auto_bookmark') {
+      // allow going to any bookmarks
+    } else if (
+      !(e.transitionType === 'link' && !(await isBlockedSite(lastCommitUrlByTabId[e.tabId])))
+    ) {
+      // Block the site unless it's clicked from a non-blocked site
+      block(e.tabId, 'Visiting a blocked site!');
     } else {
       // Don't allow visiting reddit.com by just typing "reddit" into google
       // and following the first link
       const url = new URL(e.url);
       if (url.pathname === '/') {
-        block('Visiting the site by just typing it into a search engine!');
+        block(e.tabId, 'Visiting the site by just typing it into a search engine!');
       }
     }
   }
 
-  lastCommitUrl = e.url;
+  // Important that this happens after logic above
+  lastCommitUrlByTabId[e.tabId] = e.url;
 });
 
 // Do not allow following any relative links on a blocked, SPA site.
@@ -39,12 +68,12 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(async (e) => {
   // SPA-sites like reddit will fire an onHistoryUpdate right after a
   // onCommitted when loading the initial page. We should ignore this
   // as it's triggered by the page load, and not from following a link on the site
-  if (lastCommitUrl === e.url) {
+  if (lastCommitUrlByTabId[e.tabId] === e.url) {
     return;
   }
 
   if (await isBlockedSite(e.url)) {
-    block('Following link on a blocked site!');
+    block(e.tabId, 'Following link on a blocked site!');
   }
 });
 

@@ -24,7 +24,7 @@
     "@babel/preset-env": "^7.16.11",
     "@babel/preset-react": "^7.16.7",
     "@trivago/prettier-plugin-sort-imports": "^3.3.0",
-    "@types/chrome": "^0.0.177",
+    "@types/chrome": "^0.0.195",
     "@types/react": "^17.0.39",
     "@types/react-dom": "^17.0.11",
     "babel-eslint": "^10.1.0",
