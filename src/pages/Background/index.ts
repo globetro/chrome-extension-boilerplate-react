@@ -1,8 +1,11 @@
 import {isBlockedSite} from '../../utils';
 
-function block(tabId: number, reason: string) {
+function block(tabId: number, reason: string, url: string | undefined) {
   chrome.tabs.update(tabId, {
-    url: chrome.runtime.getURL('newtab.html') + '?reason=' + encodeURIComponent(reason),
+    url:
+      chrome.runtime.getURL('newtab.html') +
+      '?' +
+      ['reason=' + encodeURIComponent(reason), 'url=' + encodeURIComponent(url || '')].join('&'),
   });
 }
 
@@ -22,7 +25,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (e) => {
         (await isBlockedSite(tab.pendingUrl)) &&
         (await isBlockedSite(lastCommitUrlByTabId[tab.openerTabId]))
       ) {
-        block(e.tabId, 'Opening blocked site in a new tab from a blocked site');
+        block(e.tabId, 'Opening blocked site in a new tab from a blocked site', tab.pendingUrl);
       }
     }
   });
@@ -38,21 +41,24 @@ chrome.webNavigation.onCommitted.addListener(async (e) => {
 
   chrome.tabs.get(e.tabId, (tab) => console.log('tabInfo', tab));
 
-  console.log('onCommitted', e);
+  const parentUrl = lastCommitUrlByTabId[e.tabId];
   if (await isBlockedSite(e.url)) {
     if (e.transitionType === 'auto_bookmark') {
       // allow going to any bookmarks
-    } else if (
-      !(e.transitionType === 'link' && !(await isBlockedSite(lastCommitUrlByTabId[e.tabId])))
-    ) {
+    } else if (!(e.transitionType === 'link' && !(await isBlockedSite(parentUrl)))) {
       // Block the site unless it's clicked from a non-blocked site
-      block(e.tabId, 'Visiting a blocked site!');
+      block(e.tabId, 'Visiting a blocked site!', e.url);
     } else {
-      // Don't allow visiting reddit.com by just typing "reddit" into google
-      // and following the first link
-      const url = new URL(e.url);
-      if (url.pathname === '/') {
-        block(e.tabId, 'Visiting the site by just typing it into a search engine!');
+      if ((parentUrl || '').startsWith('chrome-extension://')) {
+        // Allow opening a blocked site from our extension. This is to support
+        // when user completes the challenge and we open the blocked site.
+      } else {
+        // Don't allow visiting reddit.com by just typing "reddit" into google
+        // and following the first link
+        const url = new URL(e.url);
+        if (url.pathname === '/') {
+          block(e.tabId, 'Visiting the site by just typing it into a search engine!', e.url);
+        }
       }
     }
   }
@@ -73,7 +79,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(async (e) => {
   }
 
   if (await isBlockedSite(e.url)) {
-    block(e.tabId, 'Following link on a blocked site!');
+    block(e.tabId, 'Following link on a blocked site!', e.url);
   }
 });
 

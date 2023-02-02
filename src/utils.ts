@@ -22,7 +22,6 @@ export async function isBlockedSite(url: string | null | undefined) {
   }
 
   const blockedSites = await fetchBlockedSites();
-  console.log('blocked Sites', blockedSites);
   if (blockedSites.length === 0) {
     return false;
   }
