@@ -1,4 +1,4 @@
-import {isBlockedSite} from '../../utils';
+import {addTimedAllow, isBlockedSite} from '../../utils';
 
 function block(tabId: number, reason: string, url: string | undefined) {
   chrome.tabs.update(tabId, {
@@ -8,6 +8,13 @@ function block(tabId: number, reason: string, url: string | undefined) {
       ['reason=' + encodeURIComponent(reason), 'url=' + encodeURIComponent(url || '')].join('&'),
   });
 }
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'timedAllow') {
+    addTimedAllow(message.url);
+    sendResponse(true);
+  }
+});
 
 chrome.webNavigation.onBeforeNavigate.addListener(async (e) => {
   // if (e.frameType !== 'outermost_frame') {
@@ -49,16 +56,11 @@ chrome.webNavigation.onCommitted.addListener(async (e) => {
       // Block the site unless it's clicked from a non-blocked site
       block(e.tabId, 'Visiting a blocked site!', e.url);
     } else {
-      if ((parentUrl || '').startsWith('chrome-extension://')) {
-        // Allow opening a blocked site from our extension. This is to support
-        // when user completes the challenge and we open the blocked site.
-      } else {
-        // Don't allow visiting reddit.com by just typing "reddit" into google
-        // and following the first link
-        const url = new URL(e.url);
-        if (url.pathname === '/') {
-          block(e.tabId, 'Visiting the site by just typing it into a search engine!', e.url);
-        }
+      // Don't allow visiting reddit.com by just typing "reddit" into google
+      // and following the first link
+      const url = new URL(e.url);
+      if (url.pathname === '/') {
+        block(e.tabId, 'Visiting the site by just typing it into a search engine!', e.url);
       }
     }
   }
