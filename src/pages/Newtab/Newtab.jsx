@@ -15,7 +15,7 @@ export default function Newtab() {
 
   console.log('url', url);
   return (
-    <div className='container'>
+    <div className='container' style={{width: 350}}>
       {revealed ? (
         <h1>✅ Site is allowed for 5 mins</h1>
       ) : (
